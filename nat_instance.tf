@@ -19,7 +19,7 @@ data "aws_ami" "nat_ami" {
 resource "aws_security_group" "nat_sg" {
   name        = "nat-sg"
   description = "Allow internet-bound traffic from private subnets"
-  vpc_id      = aws_vpc.main.id
+  vpc_id      = aws_vpc.main[0].id
 
   ingress {
     description      = "Inbound traffic from private subnets"

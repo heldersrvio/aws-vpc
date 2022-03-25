@@ -89,7 +89,7 @@ resource "aws_route" "public_internet_gateway" {
 
   route_table_id         = aws_route_table.public[0].id
   destination_cidr_block = "0.0.0.0/0"
-  gateway_id             = aws_internet_gateway.this[0].id
+  gateway_id             = aws_internet_gateway.igw[0].id
 }
 
 resource "aws_route" "public_internet_gateway_ipv6" {
@@ -97,13 +97,21 @@ resource "aws_route" "public_internet_gateway_ipv6" {
 
   route_table_id              = aws_route_table.public[0].id
   destination_ipv6_cidr_block = "::/0"
-  gateway_id                  = aws_internet_gateway.this[0].id
+  gateway_id                  = aws_internet_gateway.igw[0].id
 }
 
 resource "aws_route_table" "private" {
   count = 1
 
   vpc_id = aws_vpc.main[0].id
+}
+
+resource "aws_route" "private_ipv6_egress" {
+  count = length(var.private_subnets)
+
+  route_table_id              = element(aws_route_table.private[*].id, count.index)
+  destination_ipv6_cidr_block = "::/0"
+  egress_only_gateway_id      = element(aws_egress_only_internet_gateway.egress_only_igw[*].id, 0)
 }
 
 resource "aws_route_table" "intra" {
@@ -147,6 +155,20 @@ resource "aws_subnet" "intra" {
   assign_ipv6_address_on_creation = true
 
   ipv6_cidr_block = cidrsubnet(aws_vpc.main[0].ipv6_cidr_block, 8, var.intra_subnet_ipv6_prefixes[count.index])
+}
+
+resource "aws_route_table_association" "public" {
+  count = length(var.public_subnets)
+
+  subnet_id      = element(aws_subnet.public[*].id, count.index)
+  route_table_id = aws_route_table.public[0].id
+}
+
+resource "aws_route_table_association" "intra" {
+  count = length(var.intra_subnets)
+
+  subnet_id      = element(aws_subnet.intra[*].id, count.index)
+  route_table_id = element(aws_route_table.intra[*].id, 0)
 }
 
 resource "aws_default_network_acl" "default_network_acl" {

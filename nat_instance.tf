@@ -51,6 +51,10 @@ resource "aws_instance" "nat" {
   source_dest_check = false
   security_groups   = [aws_security_group.nat_sg.id]
   depends_on        = [aws_internet_gateway.igw]
+
+  tags = {
+    "Name" = "nat-instance"
+  }
 }
 
 resource "aws_route" "nat_instance_route" {

@@ -8,6 +8,14 @@ locals {
       protocol    = "-1"
       cidr_block  = "0.0.0.0/0"
     },
+    {
+      rule_number     = 101
+      rule_action     = "allow"
+      from_port       = 0
+      to_port         = 0
+      protocol        = "-1"
+      ipv6_cidr_block = "::/0"
+    },
   ]
 
   public_outbound_acl_rules = [
@@ -18,6 +26,14 @@ locals {
       to_port     = 0
       protocol    = "-1"
       cidr_block  = "0.0.0.0/0"
+    },
+    {
+      rule_number     = 101
+      rule_action     = "allow"
+      from_port       = 0
+      to_port         = 0
+      protocol        = "-1"
+      ipv6_cidr_block = "::/0"
     },
   ]
 
@@ -30,6 +46,14 @@ locals {
       protocol    = "-1"
       cidr_block  = "0.0.0.0/0"
     },
+    {
+      rule_number     = 101
+      rule_action     = "allow"
+      from_port       = 0
+      to_port         = 0
+      protocol        = "-1"
+      ipv6_cidr_block = "::/0"
+    },
   ]
 
   private_outbound_acl_rules = [
@@ -40,6 +64,14 @@ locals {
       to_port     = 0
       protocol    = "-1"
       cidr_block  = "0.0.0.0/0"
+    },
+    {
+      rule_number     = 101
+      rule_action     = "allow"
+      from_port       = 0
+      to_port         = 0
+      protocol        = "-1"
+      ipv6_cidr_block = "::/0"
     },
   ]
 
@@ -52,6 +84,14 @@ locals {
       protocol    = "-1"
       cidr_block  = "0.0.0.0/0"
     },
+    {
+      rule_number     = 101
+      rule_action     = "allow"
+      from_port       = 0
+      to_port         = 0
+      protocol        = "-1"
+      ipv6_cidr_block = "::/0"
+    },
   ]
 
   intra_outbound_acl_rules = [
@@ -63,6 +103,14 @@ locals {
       protocol    = "-1"
       cidr_block  = "0.0.0.0/0"
     },
+    {
+      rule_number     = 101
+      rule_action     = "allow"
+      from_port       = 0
+      to_port         = 0
+      protocol        = "-1"
+      ipv6_cidr_block = "::/0"
+    },
   ]
 }
 
@@ -71,7 +119,7 @@ resource "aws_vpc" "main" {
 
   cidr_block                       = var.cidr
   enable_dns_hostnames             = false
-  enable_dns_support               = false
+  enable_dns_support               = true
   assign_generated_ipv6_cidr_block = true
 }
 
@@ -91,6 +139,10 @@ resource "aws_route_table" "public" {
   count = 1
 
   vpc_id = aws_vpc.main[0].id
+
+  tags = {
+    "Name" = "public-route-table"
+  }
 }
 
 resource "aws_route" "public_internet_gateway" {
@@ -113,6 +165,10 @@ resource "aws_route_table" "private" {
   count = 1
 
   vpc_id = aws_vpc.main[0].id
+
+  tags = {
+    "Name" = "private-route-table"
+  }
 }
 
 resource "aws_route" "private_ipv6_egress" {
@@ -127,6 +183,10 @@ resource "aws_route_table" "intra" {
   count = 1
 
   vpc_id = aws_vpc.main[0].id
+
+  tags = {
+    "Name" = "intra-route-table"
+  }
 }
 
 resource "aws_subnet" "public" {
@@ -140,6 +200,10 @@ resource "aws_subnet" "public" {
   assign_ipv6_address_on_creation = true
 
   ipv6_cidr_block = cidrsubnet(aws_vpc.main[0].ipv6_cidr_block, 8, var.public_subnet_ipv6_prefixes[count.index])
+
+  tags = {
+    "Name" = format("public-subnet-%d", count.index + 1)
+  }
 }
 
 resource "aws_subnet" "private" {
@@ -152,6 +216,10 @@ resource "aws_subnet" "private" {
   assign_ipv6_address_on_creation = true
 
   ipv6_cidr_block = cidrsubnet(aws_vpc.main[0].ipv6_cidr_block, 8, var.private_subnet_ipv6_prefixes[count.index])
+
+  tags = {
+    "Name" = format("private-subnet-%d", count.index + 1)
+  }
 }
 
 resource "aws_subnet" "intra" {
@@ -164,6 +232,10 @@ resource "aws_subnet" "intra" {
   assign_ipv6_address_on_creation = true
 
   ipv6_cidr_block = cidrsubnet(aws_vpc.main[0].ipv6_cidr_block, 8, var.intra_subnet_ipv6_prefixes[count.index])
+
+  tags = {
+    "Name" = format("intra-subnet-%d", count.index + 1)
+  }
 }
 
 resource "aws_route_table_association" "public" {
@@ -185,6 +257,10 @@ resource "aws_network_acl" "public_network_acl" {
 
   vpc_id     = aws_vpc.main[0].id
   subnet_ids = aws_subnet.public[*].id
+
+  tags = {
+    "Name" = "public-network-acl"
+  }
 }
 
 resource "aws_network_acl_rule" "public_inbound" {
@@ -221,17 +297,21 @@ resource "aws_network_acl_rule" "public_outbound" {
   ipv6_cidr_block = lookup(local.public_outbound_acl_rules[count.index], "ipv6_cidr_block", null)
 }
 
-resource "aws_network_acl" "private" {
-  count = length(var.private_subnets)
+resource "aws_network_acl" "private_network_acl" {
+  count = 1
 
   vpc_id     = aws_vpc.main[0].id
   subnet_ids = aws_subnet.private[*].id
+
+  tags = {
+    "Name" = "private-network-acl"
+  }
 }
 
 resource "aws_network_acl_rule" "private_inbound" {
   count = length(local.private_inbound_acl_rules)
 
-  network_acl_id = aws_network_acl.private[0].id
+  network_acl_id = aws_network_acl.private_network_acl[0].id
 
   egress          = false
   rule_number     = local.private_inbound_acl_rules[count.index]["rule_number"]
@@ -248,7 +328,7 @@ resource "aws_network_acl_rule" "private_inbound" {
 resource "aws_network_acl_rule" "private_outbound" {
   count = length(local.private_outbound_acl_rules)
 
-  network_acl_id = aws_network_acl.private[0].id
+  network_acl_id = aws_network_acl.private_network_acl[0].id
 
   egress          = true
   rule_number     = local.private_outbound_acl_rules[count.index]["rule_number"]
@@ -262,17 +342,21 @@ resource "aws_network_acl_rule" "private_outbound" {
   ipv6_cidr_block = lookup(local.private_outbound_acl_rules[count.index], "ipv6_cidr_block", null)
 }
 
-resource "aws_network_acl" "intra" {
-  count = length(var.intra_subnets)
+resource "aws_network_acl" "intra_network_acl" {
+  count = 1
 
   vpc_id     = aws_vpc.main[0].id
   subnet_ids = aws_subnet.intra[*].id
+
+  tags = {
+    "Name" = "intra-network-acl"
+  }
 }
 
 resource "aws_network_acl_rule" "intra_inbound" {
   count = length(local.intra_inbound_acl_rules)
 
-  network_acl_id = aws_network_acl.intra[0].id
+  network_acl_id = aws_network_acl.intra_network_acl[0].id
 
   egress          = false
   rule_number     = local.intra_inbound_acl_rules[count.index]["rule_number"]
@@ -289,7 +373,7 @@ resource "aws_network_acl_rule" "intra_inbound" {
 resource "aws_network_acl_rule" "intra_outbound" {
   count = length(local.intra_outbound_acl_rules)
 
-  network_acl_id = aws_network_acl.intra[0].id
+  network_acl_id = aws_network_acl.intra_network_acl[0].id
 
   egress          = true
   rule_number     = local.intra_outbound_acl_rules[count.index]["rule_number"]

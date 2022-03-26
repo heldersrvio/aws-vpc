@@ -1,14 +1,13 @@
 # AWS VPC
 
 ![Diagram](./img/diagram.svg)
-<img src="./img/diagram.svg" />
 
 An AWS VPC architecture with public, private and intra subnets made with Terraform.
 
 In order to reduce the costs derived from NAT Gateways, I decided to use a NAT instance instead. The NAT instance is created from an AMI configured with Alpine Linux and it only needs a 1 GB EBS volume. In order to install Alpine Linux on EC2, I followed [the guide from the Alpine Linux wiki](https://wiki.alpinelinux.org/wiki/Install_Alpine_on_Amazon_EC2).
 
 Afterwards, I took the following steps to make the instance able to act as a NAT gateway.
-```
+```shell
  sudo -s # root shell session
  
  apk add iptables
@@ -34,7 +33,7 @@ Afterwards, I took the following steps to make the instance able to act as a NAT
 
  Make sure to have the [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html) installed on your machine. Then, run:
 
-```
+```shell
 terraform init
 terraform plan
 terraform apply
@@ -42,6 +41,6 @@ terraform apply
 
 Most resources here should fall into the free-tier, but they can cost you money. To destroy them, run:
 
-```
+```shell
 terraform destroy
 ```

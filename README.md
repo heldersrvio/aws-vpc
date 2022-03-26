@@ -22,7 +22,7 @@ Afterwards, I took the following steps to make the instance able to act as a NAT
  rc-update add iptables 
  /etc/init.d/iptables save
 
- lbu commit -d xvda # this is important. Your changes will not persist if you don't commit them to the apkvol file.
+ lbu commit -d xvda # this is important. Your changes will not persist if you don't commit them to the apkovl file.
  ```
 
  The src/dest check is already disabled when Terraform creates the aws_instance 'nat' resource.
